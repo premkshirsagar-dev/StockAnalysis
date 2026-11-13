@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import axios from "axios";
+import api from "./api";
 import { Activity, ArrowDownRight, ArrowUpRight, BarChart3, ChevronDown, Filter, LogOut, RefreshCw, Search, SlidersHorizontal, TrendingUp } from "lucide-react";
 
 const initialFilters = { search: "", sector: "", minPrice: "", maxPrice: "", minMarketCap: "", maxPeRatio: "", minChange: "" };
@@ -23,8 +23,8 @@ function AuthScreen({ onAuthenticated }) {
   const submit = async (event) => {
     event.preventDefault(); setBusy(true); setError("");
     try {
-      const endpoint = mode === "login" ? "/api/auth/login" : "/api/auth/register";
-      const response = await axios.post(endpoint, form);
+      const endpoint = mode === "login" ? "/auth/login" : "/auth/register";
+      const response = await api.post(endpoint, form);
       localStorage.setItem("marketpulse_token", response.data.token);
       onAuthenticated(response.data.user, response.data.token);
     } catch (err) { setError(err.response?.data?.message || "Unable to connect to the authentication server."); }
@@ -45,7 +45,7 @@ function Dashboard({ user, token, onLogout }) {
   const [stocks, setStocks] = useState([]); const [summary, setSummary] = useState(null); const [sectors, setSectors] = useState([]); const [filters, setFilters] = useState(initialFilters); const [sortBy, setSortBy] = useState("marketCap"); const [order, setOrder] = useState("desc"); const [loading, setLoading] = useState(true); const [error, setError] = useState("");
   const queryString = useMemo(() => { const params = new URLSearchParams({ sortBy, order }); Object.entries(filters).forEach(([key, value]) => { if (value) params.set(key, value); }); return params.toString(); }, [filters, sortBy, order]);
   const authConfig = { headers: { Authorization: `Bearer ${token}` } };
-  const loadData = async () => { setLoading(true); setError(""); try { const [stockResponse, summaryResponse, sectorResponse] = await Promise.all([axios.get(`/api/stocks?${queryString}`, authConfig), axios.get("/api/stocks/summary", authConfig), axios.get("/api/stocks/sectors", authConfig)]); setStocks(stockResponse.data.data); setSummary(summaryResponse.data); setSectors(sectorResponse.data); } catch (err) { if (err.response?.status === 401) onLogout(); else setError("Could not reach the protected API. Make sure the backend is running."); } finally { setLoading(false); } };
+  const loadData = async () => { setLoading(true); setError(""); try { const [stockResponse, summaryResponse, sectorResponse] = await Promise.all([api.get(`/stocks?${queryString}`, authConfig), api.get("/stocks/summary", authConfig), api.get("/stocks/sectors", authConfig)]); setStocks(stockResponse.data.data); setSummary(summaryResponse.data); setSectors(sectorResponse.data); } catch (err) { if (err.response?.status === 401) onLogout(); else setError("Could not reach the protected API. Make sure the backend is running."); } finally { setLoading(false); } };
   useEffect(() => { loadData(); }, [queryString, token]);
   const updateFilter = (key, value) => setFilters((current) => ({ ...current, [key]: value })); const resetFilters = () => setFilters(initialFilters); const gainers = stocks.filter((stock) => stock.changePercent > 0).length;
 
@@ -54,7 +54,7 @@ function Dashboard({ user, token, onLogout }) {
 
 function App() {
   const [token, setToken] = useState(() => localStorage.getItem("marketpulse_token")); const [user, setUser] = useState(null); const [checking, setChecking] = useState(Boolean(token));
-  useEffect(() => { if (!token) { setChecking(false); return; } axios.get("/api/auth/me", { headers: { Authorization: `Bearer ${token}` } }).then((response) => setUser(response.data.user)).catch(() => { localStorage.removeItem("marketpulse_token"); setToken(null); }).finally(() => setChecking(false)); }, [token]);
+  useEffect(() => { if (!token) { setChecking(false); return; } api.get("/auth/me", { headers: { Authorization: `Bearer ${token}` } }).then((response) => setUser(response.data.user)).catch(() => { localStorage.removeItem("marketpulse_token"); setToken(null); }).finally(() => setChecking(false)); }, [token]);
   const authenticated = (nextUser, nextToken) => { setUser(nextUser); setToken(nextToken); }; const logout = () => { localStorage.removeItem("marketpulse_token"); setUser(null); setToken(null); };
   if (checking) return <div className="auth-loading">Loading your secure workspace…</div>;
   return token && user ? <Dashboard user={user} token={token} onLogout={logout} /> : <AuthScreen onAuthenticated={authenticated} />;
