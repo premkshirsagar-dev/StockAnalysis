@@ -1,9 +1,11 @@
 const path = require("path");
+const dns = require("node:dns");
 const dotenv = require("dotenv");
 const mongoose = require("mongoose");
 const User = require("../models/User");
 
 dotenv.config({ path: path.resolve(__dirname, "../../.env") });
+dns.setServers(["8.8.8.8", "1.1.1.1"]);
 const email = String(process.argv[2] || "").trim().toLowerCase();
 if (!email) { console.error("Usage: npm run create-admin -- user@example.com"); process.exit(1); }
 

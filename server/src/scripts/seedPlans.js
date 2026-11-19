@@ -1,9 +1,11 @@
 const path = require("path");
+const dns = require("node:dns");
 const dotenv = require("dotenv");
 const mongoose = require("mongoose");
 const SubscriptionPlan = require("../models/SubscriptionPlan");
 
 dotenv.config({ path: path.resolve(__dirname, "../../.env") });
+dns.setServers(["8.8.8.8", "1.1.1.1"]);
 
 const plans = [
   { name: "Free", description: "Basic market overview and simple filters.", price: 0, durationDays: 0, features: { maxScreenFilters: 3, maxWatchlistStocks: 5, technicalIndicators: ["SMA", "EMA"], advancedCharts: false, realTimeData: false, advancedScreening: false } },
