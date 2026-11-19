@@ -9,6 +9,7 @@ const INSTRUMENT_URLS = [
 
 let instrumentCache = { expiresAt: 0, instruments: [] };
 let quoteCache = { expiresAt: 0, stocks: [] };
+let quoteLoadPromise = null;
 
 function requiredToken() {
   if (!process.env.UPSTOX_ACCESS_TOKEN) throw new Error("UPSTOX_ACCESS_TOKEN is missing.");
@@ -77,20 +78,21 @@ async function fetchQuoteBatch(instrumentKeys) {
 
 async function getLiveStocks() {
   if (quoteCache.expiresAt > Date.now()) return quoteCache.stocks;
-  const instruments = requestedInstruments(await loadInstruments());
-  if (!instruments.length) return [];
-  const lookup = new Map(instruments.map((item) => [item.instrument_key, item]));
-  const stocks = [];
-  for (let index = 0; index < instruments.length; index += 500) {
-    const batch = instruments.slice(index, index + 500);
-    const quotes = await fetchQuoteBatch(batch.map((item) => item.instrument_key));
-    Object.values(quotes).forEach((quote) => {
-      const instrument = lookup.get(quote.instrument_token);
-      if (instrument) stocks.push(normalizeQuote(quote, instrument));
-    });
-  }
-  quoteCache = { expiresAt: Date.now() + Number(process.env.UPSTOX_CACHE_SECONDS || 15) * 1000, stocks };
-  return stocks;
+  if (quoteLoadPromise) return quoteLoadPromise;
+  quoteLoadPromise = (async () => {
+    const instruments = requestedInstruments(await loadInstruments());
+    if (!instruments.length) return [];
+    const lookup = new Map(instruments.map((item) => [item.instrument_key, item]));
+    const stocks = [];
+    for (let index = 0; index < instruments.length; index += 500) {
+      const batch = instruments.slice(index, index + 500);
+      const quotes = await fetchQuoteBatch(batch.map((item) => item.instrument_key));
+      Object.values(quotes).forEach((quote) => { const instrument = lookup.get(quote.instrument_token); if (instrument) stocks.push(normalizeQuote(quote, instrument)); });
+    }
+    quoteCache = { expiresAt: Date.now() + Number(process.env.UPSTOX_CACHE_SECONDS || 15) * 1000, stocks };
+    return stocks;
+  })();
+  try { return await quoteLoadPromise; } finally { quoteLoadPromise = null; }
 }
 
 async function getMarketDataStatus() {

@@ -17,7 +17,7 @@ function bollinger(candles, period = 20, multiplier = 2) {
 
 function CandleChart({ candles }) {
   const chartContainer = useRef(null);
-  const [indicators, setIndicators] = useState({ sma: true, ema: false, bollinger: false });
+  const [indicators, setIndicators] = useState({ sma7: false, sma: true, ema: false, bollinger: false });
 
   useEffect(() => {
     if (!chartContainer.current || !candles.length) return undefined;
@@ -34,6 +34,7 @@ function CandleChart({ candles }) {
     const volumeSeries = chart.addSeries(HistogramSeries, { priceFormat: { type: "volume" }, priceScaleId: "" });
     volumeSeries.priceScale().applyOptions({ scaleMargins: { top: 0.82, bottom: 0 } });
     volumeSeries.setData(candles.map((candle) => ({ time: candle.time, value: candle.volume, color: candle.close >= candle.open ? "#58d6a066" : "#f1848e66" })));
+    if (indicators.sma7) { const series = chart.addSeries(LineSeries, { color: "#58d6a0", lineWidth: 2, title: "SMA 7" }); series.setData(sma(candles, 7)); }
     if (indicators.sma) { const series = chart.addSeries(LineSeries, { color: "#f7c66b", lineWidth: 2, title: "SMA 20" }); series.setData(sma(candles, 20)); }
     if (indicators.ema) { const series = chart.addSeries(LineSeries, { color: "#7ea9ff", lineWidth: 2, title: "EMA 20" }); series.setData(ema(candles, 20)); }
     if (indicators.bollinger) { const bands = bollinger(candles); const upper = chart.addSeries(LineSeries, { color: "#b48cff", lineWidth: 1, title: "BB upper" }); const lower = chart.addSeries(LineSeries, { color: "#b48cff", lineWidth: 1, title: "BB lower" }); upper.setData(bands.upper); lower.setData(bands.lower); }
@@ -43,7 +44,7 @@ function CandleChart({ candles }) {
     return () => { window.removeEventListener("resize", resize); chart.remove(); };
   }, [candles, indicators]);
 
-  return <div className="chart-workspace"><div className="indicator-toolbar"><span>Indicators</span><button className={indicators.sma ? "active" : ""} onClick={() => setIndicators((current) => ({ ...current, sma: !current.sma }))}>SMA 20</button><button className={indicators.ema ? "active" : ""} onClick={() => setIndicators((current) => ({ ...current, ema: !current.ema }))}>EMA 20</button><button className={indicators.bollinger ? "active" : ""} onClick={() => setIndicators((current) => ({ ...current, bollinger: !current.bollinger }))}>Bollinger</button><span className="chart-hint">Scroll to zoom · drag to pan · crosshair enabled</span></div><div className="candle-chart" ref={chartContainer}>{!candles.length && <div className="chart-empty">No historical candles available for this interval.</div>}</div></div>;
+  return <div className="chart-workspace"><div className="indicator-toolbar"><span>Indicators</span><button className={indicators.sma7 ? "active" : ""} onClick={() => setIndicators((current) => ({ ...current, sma7: !current.sma7 }))}>SMA 7</button><button className={indicators.sma ? "active" : ""} onClick={() => setIndicators((current) => ({ ...current, sma: !current.sma }))}>SMA 20</button><button className={indicators.ema ? "active" : ""} onClick={() => setIndicators((current) => ({ ...current, ema: !current.ema }))}>EMA 20</button><button className={indicators.bollinger ? "active" : ""} onClick={() => setIndicators((current) => ({ ...current, bollinger: !current.bollinger }))}>Bollinger</button><span className="chart-hint">Scroll to zoom · drag to pan · crosshair enabled</span></div><div className="candle-chart" ref={chartContainer}>{!candles.length && <div className="chart-empty">No historical candles available for this interval.</div>}</div></div>;
 }
 
 export default CandleChart;
