@@ -1,0 +1,51 @@
+input[type="number"] {
+    appearance: textfield;
+    -moz-appearance: textfield
+}
+
+input[type="number"]::-webkit-inner-spin-button,
+input[type="number"]::-webkit-outer-spin-button {
+    margin: 0;
+    -webkit-appearance: none
+}
+
+.live-connected {
+    background: #58d6a0 !important
+}
+
+.price-up .live-price {
+    animation: priceUp .9s ease
+}
+
+.price-down .live-price {
+    animation: priceDown .9s ease
+}
+
+@keyframes priceUp {
+    0% {
+        background: #1a6d51;
+        color: #b9ffe0
+    }
+
+    100% {
+        background: transparent;
+        color: #e4ebf5
+    }
+}
+
+@keyframes priceDown {
+    0% {
+        background: #773640;
+        color: #ffd4d8
+    }
+
+    100% {
+        background: transparent;
+        color: #e4ebf5
+    }
+}
+
+.live-price {
+    transition: color .2s ease;
+    font-variant-numeric: tabular-nums
+}

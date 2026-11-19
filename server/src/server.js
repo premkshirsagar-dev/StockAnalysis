@@ -1,4 +1,5 @@
 const path = require("path");
+const http = require("http");
 const express = require("express");
 const cors = require("cors");
 const helmet = require("helmet");
@@ -13,9 +14,11 @@ const adminRouter = require("./routes/admin");
 const plansRouter = require("./routes/plans");
 const screensRouter = require("./routes/screens");
 const { requireAuth } = require("./middleware/auth");
+const { startLiveMarketGateway } = require("./services/liveMarketGateway");
 
 dotenv.config({ path: path.resolve(__dirname, "../.env") });
 const app = express();
+const httpServer = http.createServer(app);
 const PORT = process.env.PORT || 5000;
 
 const allowedOrigins = ["http://localhost:5173", process.env.CLIENT_URL].filter(Boolean);
@@ -37,7 +40,10 @@ async function start() {
   try {
     await mongoose.connect(process.env.MONGO_URI, { serverSelectionTimeoutMS: 8000 });
     console.log("MongoDB connected.");
-    app.listen(PORT, () => console.log(`MarketPulse API running at http://localhost:${PORT}`));
+    httpServer.listen(PORT, async () => {
+      console.log(`MarketPulse API running at http://localhost:${PORT}`);
+      if (process.env.MARKET_DATA_MODE === "upstox") await startLiveMarketGateway(httpServer);
+    });
   } catch (error) { console.error("MongoDB connection failed:", error.message); process.exit(1); }
 }
 start();
