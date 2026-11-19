@@ -98,4 +98,4 @@ async function getMarketDataStatus() {
   return { provider: "Upstox", mode: process.env.MARKET_DATA_MODE || "sample", instrumentCount: instruments.length, cachedQuotes: quoteCache.stocks.length, quoteCacheExpiresAt: quoteCache.expiresAt || null };
 }
 
-module.exports = { getLiveStocks, getMarketDataStatus };
+module.exports = { getLiveStocks, getMarketDataStatus, loadInstruments, requestedInstruments };
