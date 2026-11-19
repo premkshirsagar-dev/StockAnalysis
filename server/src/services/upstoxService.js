@@ -1,5 +1,6 @@
 const axios = require("axios");
 const zlib = require("zlib");
+const { classifyStock } = require("./sectorClassifier");
 
 const INSTRUMENT_URLS = [
   "https://assets.upstox.com/market-quote/instruments/exchange/NSE.json.gz",
@@ -35,10 +36,13 @@ function normalizeQuote(quote, instrument) {
   const price = Number(quote.last_price || 0);
   const absoluteChange = Number(quote.net_change || 0);
   const changePercent = previousClose ? (absoluteChange / previousClose) * 100 : 0;
+  const symbol = quote.symbol || instrument.trading_symbol;
+  const company = instrument.name || quote.symbol || instrument.trading_symbol;
+  const classification = classifyStock({ symbol, company });
   return {
-    symbol: quote.symbol || instrument.trading_symbol,
-    company: instrument.name || quote.symbol || instrument.trading_symbol,
-    sector: "Unknown",
+    symbol,
+    company,
+    ...classification,
     exchange: instrument.exchange,
     instrumentKey: quote.instrument_token || instrument.instrument_key,
     price,

@@ -14,12 +14,16 @@ function toNumber(value) {
 function filterStocks(stocks, query) {
   const search = String(query.search || "").trim().toLowerCase();
   const sector = String(query.sector || "").trim().toLowerCase();
+  const category = String(query.category || "").trim().toLowerCase();
+  const industry = String(query.industry || "").trim().toLowerCase();
   const minPrice = toNumber(query.minPrice); const maxPrice = toNumber(query.maxPrice);
   const minMarketCap = toNumber(query.minMarketCap); const maxPeRatio = toNumber(query.maxPeRatio); const minChange = toNumber(query.minChange);
   return stocks.filter((stock) => {
     const matchesSearch = !search || `${stock.symbol} ${stock.company}`.toLowerCase().includes(search);
     const matchesSector = !sector || stock.sector.toLowerCase() === sector;
-    return matchesSearch && matchesSector && (minPrice === undefined || stock.price >= minPrice) && (maxPrice === undefined || stock.price <= maxPrice) && (minMarketCap === undefined || stock.marketCap >= minMarketCap) && (maxPeRatio === undefined || stock.peRatio <= maxPeRatio) && (minChange === undefined || stock.changePercent >= minChange);
+    const matchesCategory = !category || stock.category.toLowerCase() === category;
+    const matchesIndustry = !industry || stock.industry.toLowerCase() === industry;
+    return matchesSearch && matchesSector && matchesCategory && matchesIndustry && (minPrice === undefined || stock.price >= minPrice) && (maxPrice === undefined || stock.price <= maxPrice) && (minMarketCap === undefined || stock.marketCap >= minMarketCap) && (maxPeRatio === undefined || stock.peRatio <= maxPeRatio) && (minChange === undefined || stock.changePercent >= minChange);
   });
 }
 
@@ -53,6 +57,17 @@ router.get("/summary", async (req, res, next) => {
 router.get("/sectors", async (req, res, next) => {
   try { res.json([...new Set((await getSourceStocks()).map((stock) => stock.sector))].sort()); }
   catch (error) { next(error); }
+});
+
+router.get("/classifications", async (req, res, next) => {
+  try {
+    const stocks = await getSourceStocks();
+    res.json({
+      sectors: [...new Set(stocks.map((stock) => stock.sector))].sort(),
+      categories: [...new Set(stocks.map((stock) => stock.category))].sort(),
+      industries: [...new Set(stocks.map((stock) => stock.industry))].sort()
+    });
+  } catch (error) { next(error); }
 });
 
 module.exports = router;
