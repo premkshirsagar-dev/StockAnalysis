@@ -82,7 +82,8 @@ function scheduleReconnect(io) {
 
 async function startLiveMarketGateway(httpServer) {
   const { Server } = require("socket.io");
-  const io = new Server(httpServer, { cors: { origin: ["http://localhost:5173", process.env.CLIENT_URL].filter(Boolean) } });
+  const origins = ["http://localhost:5173", "http://localhost:4173", process.env.CLIENT_URL].filter(Boolean).map((origin) => origin.trim().replace(/\/$/, ""));
+  const io = new Server(httpServer, { cors: { origin: origins, methods: ["GET", "POST"] } });
   io.use(authorizeSocket);
   io.on("connection", (socket) => { socket.emit("market:status", { connected: Boolean(upstream && upstream.readyState === WebSocket.OPEN), instrumentCount: instrumentKeys.length }); });
   feedResponseType = (await protobuf.load(path.resolve(__dirname, "../data/MarketDataFeed.proto"))).lookupType("FeedResponse");

@@ -21,8 +21,11 @@ const app = express();
 const httpServer = http.createServer(app);
 const PORT = process.env.PORT || 5000;
 
-const allowedOrigins = ["http://localhost:5173", process.env.CLIENT_URL].filter(Boolean);
-app.use(cors({ origin: allowedOrigins }));
+const allowedOrigins = ["http://localhost:5173", "http://localhost:4173", process.env.CLIENT_URL]
+  .filter(Boolean)
+  .map((origin) => origin.trim().replace(/\/$/, ""));
+app.use(cors({ origin: (origin, callback) => { if (!origin || allowedOrigins.includes(origin.replace(/\/$/, ""))) return callback(null, true); return callback(new Error("CORS origin not allowed.")); }, credentials: false, optionsSuccessStatus: 204 }));
+app.options("*", cors({ origin: allowedOrigins, optionsSuccessStatus: 204 }));
 app.use(helmet()); app.use(morgan("dev")); app.use(express.json());
 app.get("/", (req, res) => res.json({ name: "MarketPulse API", status: "running", database: mongoose.connection.readyState === 1 ? "connected" : "not-connected" }));
 app.get("/api/health", (req, res) => res.json({ ok: true, database: mongoose.connection.readyState === 1 ? "connected" : "not-connected" }));
