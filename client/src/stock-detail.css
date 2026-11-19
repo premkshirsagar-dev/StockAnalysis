@@ -1,0 +1,289 @@
+.sidebar-action {
+    cursor: pointer
+}
+
+.stock-row {
+    cursor: pointer
+}
+
+.stock-row:hover {
+    background: #132a48 !important
+}
+
+.stock-detail-page {
+    min-height: 100vh;
+    background: radial-gradient(circle at 75% -15%, #153256 0, #07111f 38%);
+    color: #e7edf7;
+    padding: 38px 5.4% 50px
+}
+
+.detail-header {
+    max-width: 1200px;
+    margin: 0 auto 34px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center
+}
+
+.detail-updated {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    color: #8291a8;
+    font: 11px 'DM Mono'
+}
+
+.detail-hero {
+    max-width: 1200px;
+    margin: 0 auto 26px;
+    background: #0c192a;
+    border: 1px solid #1d2b40;
+    border-radius: 12px;
+    padding: 27px;
+    display: flex;
+    justify-content: space-between;
+    gap: 30px
+}
+
+.detail-hero h1 {
+    font: 700 42px 'Space Grotesk';
+    margin: 0
+}
+
+.detail-company {
+    color: #91a2bb;
+    margin: 7px 0 14px
+}
+
+.detail-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 7px
+}
+
+.detail-tags span {
+    color: #94b9e9;
+    background: #132a48;
+    border: 1px solid #2b4b75;
+    border-radius: 99px;
+    padding: 5px 9px;
+    font-size: 10px
+}
+
+.detail-price {
+    text-align: right
+}
+
+.detail-price strong {
+    display: block;
+    font: 600 34px 'Space Grotesk'
+}
+
+.detail-price small {
+    display: block;
+    color: #70839d;
+    font-size: 11px;
+    margin-top: 8px
+}
+
+.detail-change {
+    display: inline-flex;
+    align-items: center;
+    gap: 3px;
+    font: 500 13px 'DM Mono';
+    margin-top: 8px
+}
+
+.detail-change.positive,
+.text-positive {
+    color: #65daa9
+}
+
+.detail-change.negative,
+.text-negative {
+    color: #f1848e
+}
+
+.detail-metric-grid {
+    max-width: 1200px;
+    margin: 0 auto 20px;
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 14px
+}
+
+.detail-metric {
+    background: #0c1a2c;
+    border: 1px solid #1d2b40;
+    border-radius: 11px;
+    padding: 16px
+}
+
+.detail-metric span {
+    display: block;
+    color: #8291a8;
+    font-size: 11px;
+    margin-bottom: 8px
+}
+
+.detail-metric strong {
+    display: block;
+    color: #e7edf7;
+    font: 600 18px 'Space Grotesk'
+}
+
+.detail-metric small {
+    display: block;
+    color: #627895;
+    margin-top: 5px;
+    font-size: 10px
+}
+
+.detail-columns {
+    max-width: 1200px;
+    margin: 0 auto;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px
+}
+
+.detail-card {
+    background: #0c192a;
+    border: 1px solid #1d2b40;
+    border-radius: 11px;
+    padding: 22px
+}
+
+.detail-card-title {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+    margin-bottom: 17px
+}
+
+.detail-card-title>svg {
+    color: #70a9ff
+}
+
+.detail-card-title h2 {
+    font: 600 18px 'Space Grotesk';
+    margin: 0
+}
+
+.detail-card-title .eyebrow {
+    margin-bottom: 5px
+}
+
+.snapshot-row {
+    display: flex;
+    justify-content: space-between;
+    gap: 15px;
+    border-bottom: 1px solid #17263a;
+    padding: 12px 0;
+    color: #8291a8;
+    font-size: 12px
+}
+
+.snapshot-row:last-child {
+    border-bottom: 0
+}
+
+.snapshot-row strong {
+    color: #dce7f6;
+    text-align: right
+}
+
+.depth-head,
+.depth-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 15px
+}
+
+.depth-head {
+    color: #657b98;
+    font: 500 10px 'DM Mono';
+    text-transform: uppercase;
+    padding-bottom: 9px;
+    border-bottom: 1px solid #1d2b40
+}
+
+.depth-row {
+    padding: 11px 0;
+    border-bottom: 1px solid #17263a;
+    color: #91a2bb;
+    font: 11px 'DM Mono'
+}
+
+.depth-row b {
+    color: #dce7f6;
+    font-weight: 500;
+    float: right
+}
+
+.detail-disclaimer {
+    max-width: 1200px;
+    margin: 18px auto 0;
+    color: #6f829c;
+    font-size: 11px;
+    display: flex;
+    align-items: center;
+    gap: 7px
+}
+
+@media(max-width:850px) {
+    .detail-hero {
+        display: block
+    }
+
+    .detail-price {
+        text-align: left;
+        margin-top: 20px
+    }
+
+    .detail-metric-grid {
+        grid-template-columns: repeat(2, 1fr)
+    }
+
+    .detail-columns {
+        grid-template-columns: 1fr
+    }
+}
+
+@media(max-width:520px) {
+    .stock-detail-page {
+        padding: 25px 16px
+    }
+
+    .detail-header {
+        display: block
+    }
+
+    .detail-updated {
+        margin-top: 15px
+    }
+
+    .detail-hero {
+        padding: 19px
+    }
+
+    .detail-hero h1 {
+        font-size: 34px
+    }
+
+    .detail-metric-grid {
+        gap: 9px
+    }
+
+    .detail-metric {
+        padding: 12px
+    }
+
+    .detail-metric strong {
+        font-size: 15px
+    }
+
+    .detail-card {
+        padding: 16px
+    }
+}

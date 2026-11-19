@@ -50,6 +50,17 @@ function normalizeQuote(quote, instrument) {
     marketCap: 0,
     peRatio: 0,
     volume: Number(quote.volume || quote.ohlc?.volume || 0),
+    open: Number(quote.ohlc?.open || 0),
+    high: Number(quote.ohlc?.high || 0),
+    low: Number(quote.ohlc?.low || 0),
+    close: Number(quote.ohlc?.close || previousClose),
+    averagePrice: Number(quote.average_price || 0),
+    totalBuyQuantity: Number(quote.total_buy_quantity || 0),
+    totalSellQuantity: Number(quote.total_sell_quantity || 0),
+    yearHigh: Number(quote.year_high || 0),
+    yearLow: Number(quote.year_low || 0),
+    lastTradeTime: quote.last_trade_time || null,
+    depth: quote.depth || { buy: [], sell: [] },
     previousClose,
     updatedAt: quote.timestamp || new Date().toISOString()
   };
