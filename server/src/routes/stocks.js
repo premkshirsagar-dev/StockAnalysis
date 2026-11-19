@@ -2,6 +2,7 @@ const express = require("express");
 const sampleStocks = require("../data/stocks");
 const Stock = require("../models/Stock");
 const { getLiveStocks } = require("../services/upstoxService");
+const { getHistoricalCandles } = require("../services/historicalDataService");
 
 const router = express.Router();
 
@@ -67,6 +68,18 @@ router.get("/classifications", async (req, res, next) => {
       categories: [...new Set(stocks.map((stock) => stock.category))].sort(),
       industries: [...new Set(stocks.map((stock) => stock.industry))].sort()
     });
+  } catch (error) { next(error); }
+});
+
+router.get("/:instrumentKey/candles", async (req, res, next) => {
+  try {
+    const candles = await getHistoricalCandles({
+      instrumentKey: decodeURIComponent(req.params.instrumentKey),
+      interval: req.query.interval || "day",
+      fromDate: req.query.from,
+      toDate: req.query.to
+    });
+    res.json({ count: candles.length, interval: req.query.interval || "day", data: candles });
   } catch (error) { next(error); }
 });
 
