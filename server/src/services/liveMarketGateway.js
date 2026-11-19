@@ -37,19 +37,28 @@ function findLtp(feed) {
 }
 
 function emitTicks(io, message) {
-  const decoded = feedResponseType.decode(message);
-  const feeds = decoded.feeds || {};
-  Object.entries(feeds).forEach(([instrumentKey, feed]) => {
-    const ltpc = findLtp(feed);
-    if (!ltpc || !Number(ltpc.ltp)) return;
-    io.emit("market:tick", {
-      instrumentKey,
-      price: Number(ltpc.ltp),
-      previousClose: Number(ltpc.cp || 0),
-      lastTradeTime: Number(ltpc.ltt || Date.now()),
-      receivedAt: Date.now()
+  try {
+    const buffer = Buffer.isBuffer(message)
+      ? message
+      : message instanceof ArrayBuffer
+        ? Buffer.from(new Uint8Array(message))
+        : Buffer.from(message);
+    const decoded = feedResponseType.decode(buffer);
+    const feeds = decoded.feeds || {};
+    Object.entries(feeds).forEach(([instrumentKey, feed]) => {
+      const ltpc = findLtp(feed);
+      if (!ltpc || !Number(ltpc.ltp)) return;
+      io.emit("market:tick", {
+        instrumentKey,
+        price: Number(ltpc.ltp),
+        previousClose: Number(ltpc.cp || 0),
+        lastTradeTime: Number(ltpc.ltt || Date.now()),
+        receivedAt: Date.now()
+      });
     });
-  });
+  } catch (error) {
+    console.error("Ignoring invalid Upstox feed packet:", error.message);
+  }
 }
 
 async function connectUpstream(io) {
@@ -62,7 +71,7 @@ async function connectUpstream(io) {
     const websocketUrl = authResponse.data?.data?.authorizedRedirectUri || authResponse.data?.data?.authorized_redirect_uri;
     if (!websocketUrl) throw new Error("Upstox did not return an authorized WebSocket URL.");
     upstream = new WebSocket(websocketUrl, { followRedirects: true, headers: { Authorization: `Bearer ${process.env.UPSTOX_ACCESS_TOKEN}`, Accept: "*/*" } });
-    upstream.binaryType = "arraybuffer";
+    upstream.binaryType = "nodebuffer";
     upstream.on("open", () => {
       const subscription = { guid: `marketpulse-${Date.now()}`, method: "sub", data: { mode: "ltpc", instrumentKeys } };
       upstream.send(Buffer.from(JSON.stringify(subscription)));
