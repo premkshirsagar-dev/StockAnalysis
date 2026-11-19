@@ -1,0 +1,19 @@
+{
+  "name": "Nuclear Terminals",
+  "short_name": "Nuclear Terminals",
+  "description": "Live NSE and BSE stock screening and market intelligence.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "background_color": "#07111f",
+  "theme_color": "#07111f",
+  "icons": [
+    {
+      "src": "/nuclear-terminals-icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}

@@ -1,0 +1,14 @@
+.brand strong,
+.auth-brand strong {
+    font-size: 14px;
+    white-space: nowrap
+}
+
+.brand span,
+.auth-brand span {
+    white-space: nowrap
+}
+
+.brand {
+    margin-right: 2px
+}
