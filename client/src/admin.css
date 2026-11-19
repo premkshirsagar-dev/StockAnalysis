@@ -373,3 +373,5 @@
         grid-template-columns: 1fr
     }
 }
+
+.admin-nav-button{display:flex;align-items:center;gap:12px;width:100%;border:0;background:transparent;color:#91a0b8;padding:12px 13px;border-radius:9px;font:13px 'DM Sans';text-align:left;cursor:pointer}.admin-nav-button:hover{background:#132a48;color:#dceaff}.admin-nav-button:focus-visible{outline:2px solid #5c9dff;outline-offset:2px}
