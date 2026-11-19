@@ -15,7 +15,7 @@ function createToken(user) {
 }
 
 function publicUser(user) {
-  return { id: user._id, name: user.name, email: user.email, createdAt: user.createdAt };
+  return { id: user._id, name: user.name, email: user.email, role: user.role, isActive: user.isActive, subscription: user.subscription, createdAt: user.createdAt };
 }
 
 router.post("/register", async (req, res, next) => {
@@ -32,7 +32,7 @@ router.post("/register", async (req, res, next) => {
     if (existing) return res.status(409).json({ message: "An account with this email already exists." });
 
     const passwordHash = await bcrypt.hash(password, 12);
-    const user = await User.create({ name, email, passwordHash });
+    const user = await User.create({ name, email, passwordHash, role: "user", isActive: true, subscription: { planName: "Free", status: "active" } });
     res.status(201).json({ token: createToken(user), user: publicUser(user) });
   } catch (error) {
     if (error.code === 11000) return res.status(409).json({ message: "An account with this email already exists." });

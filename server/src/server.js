@@ -1,6 +1,3 @@
-const dns = require("node:dns");
-dns.setServers(["8.8.8.8", "1.1.1.1"]);
-
 const path = require("path");
 const express = require("express");
 const cors = require("cors");
@@ -12,6 +9,9 @@ const mongoose = require("mongoose");
 const stocksRouter = require("./routes/stocks");
 const authRouter = require("./routes/auth");
 const marketDataRouter = require("./routes/marketData");
+const adminRouter = require("./routes/admin");
+const plansRouter = require("./routes/plans");
+const screensRouter = require("./routes/screens");
 const { requireAuth } = require("./middleware/auth");
 
 dotenv.config({ path: path.resolve(__dirname, "../.env") });
@@ -26,6 +26,9 @@ app.get("/api/health", (req, res) => res.json({ ok: true, database: mongoose.con
 app.use("/api/auth", authRouter);
 app.use("/api/stocks", requireAuth, stocksRouter);
 app.use("/api/market-data", requireAuth, marketDataRouter);
+app.use("/api/admin", requireAuth, adminRouter);
+app.use("/api/plans", plansRouter);
+app.use("/api/screens", screensRouter);
 app.use((error, req, res, next) => { console.error(error); res.status(500).json({ message: error.message || "Something went wrong on the server." }); });
 
 async function start() {
