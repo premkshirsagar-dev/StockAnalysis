@@ -1,49 +1,75 @@
-const path = require("path");
-const http = require("http");
-const express = require("express");
-const cors = require("cors");
-const helmet = require("helmet");
-const morgan = require("morgan");
-const dotenv = require("dotenv");
-const mongoose = require("mongoose");
+import { useEffect, useMemo, useState } from "react";
+import api from "./api";
+import AdminPanel from "./AdminPanel";
+import StockDetail from "./StockDetail";
+import "./admin.css";
+import "./stock-detail.css";
+import "./chart.css";
+import { useLiveMarket } from "./useLiveMarket";
+import "./live-market.css";
+import { Activity, ArrowDownRight, ArrowUpRight, BarChart3, ChevronDown, Filter, LogOut, Search, Shield as ShieldIcon, SlidersHorizontal, TrendingUp } from "lucide-react";
 
-const stocksRouter = require("./routes/stocks");
-const authRouter = require("./routes/auth");
-const marketDataRouter = require("./routes/marketData");
-const adminRouter = require("./routes/admin");
-const plansRouter = require("./routes/plans");
-const screensRouter = require("./routes/screens");
-const { requireAuth } = require("./middleware/auth");
-const { startLiveMarketGateway } = require("./services/liveMarketGateway");
+const initialFilters = { search: "", sector: "", minPrice: "", maxPrice: "", minMarketCap: "", maxPeRatio: "", minChange: "" };
+const formatMoney = (value) => new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 2 }).format(value);
+const formatCap = (value) => value >= 1e12 ? `$${(value / 1e12).toFixed(2)}T` : `$${(value / 1e9).toFixed(1)}B`;
+const formatVolume = (value) => value >= 1e6 ? `${(value / 1e6).toFixed(1)}M` : value.toLocaleString();
 
-dotenv.config({ path: path.resolve(__dirname, "../.env") });
-const app = express();
-const httpServer = http.createServer(app);
-const PORT = process.env.PORT || 5000;
-
-const allowedOrigins = ["http://localhost:5173", process.env.CLIENT_URL].filter(Boolean);
-app.use(cors({ origin: allowedOrigins }));
-app.use(helmet()); app.use(morgan("dev")); app.use(express.json());
-app.get("/", (req, res) => res.json({ name: "MarketPulse API", status: "running", database: mongoose.connection.readyState === 1 ? "connected" : "not-connected" }));
-app.get("/api/health", (req, res) => res.json({ ok: true, database: mongoose.connection.readyState === 1 ? "connected" : "not-connected" }));
-app.use("/api/auth", authRouter);
-app.use("/api/stocks", requireAuth, stocksRouter);
-app.use("/api/market-data", requireAuth, marketDataRouter);
-app.use("/api/admin", requireAuth, adminRouter);
-app.use("/api/plans", plansRouter);
-app.use("/api/screens", screensRouter);
-app.use((error, req, res, next) => { console.error(error); res.status(500).json({ message: error.message || "Something went wrong on the server." }); });
-
-async function start() {
-  if (!process.env.MONGO_URI) { console.error("MONGO_URI is missing."); process.exit(1); }
-  if (!process.env.JWT_SECRET || process.env.JWT_SECRET.length < 32) { console.error("JWT_SECRET is missing or too short."); process.exit(1); }
-  try {
-    await mongoose.connect(process.env.MONGO_URI, { serverSelectionTimeoutMS: 8000 });
-    console.log("MongoDB connected.");
-    httpServer.listen(PORT, async () => {
-      console.log(`MarketPulse API running at http://localhost:${PORT}`);
-      if (process.env.MARKET_DATA_MODE === "upstox") await startLiveMarketGateway(httpServer);
-    });
-  } catch (error) { console.error("MongoDB connection failed:", error.message); process.exit(1); }
+function StatCard({ icon: Icon, label, value, helper, accent }) {
+  return <div className="stat-card"><div className={`stat-icon ${accent}`}><Icon size={18} /></div><div><p>{label}</p><strong>{value}</strong><span>{helper}</span></div></div>;
 }
-start();
+
+function AuthScreen({ onAuthenticated }) {
+  const [mode, setMode] = useState("login");
+  const [form, setForm] = useState({ name: "", email: "", password: "" });
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState("");
+  const [now, setNow] = useState(new Date());
+
+  useEffect(() => { const timer = setInterval(() => setNow(new Date()), 1000); return () => clearInterval(timer); }, []);
+  const update = (key, value) => setForm((current) => ({ ...current, [key]: value }));
+  const submit = async (event) => {
+    event.preventDefault(); setBusy(true); setError("");
+    try {
+      const endpoint = mode === "login" ? "/auth/login" : "/auth/register";
+      const response = await api.post(endpoint, form);
+      localStorage.setItem("marketpulse_token", response.data.token);
+      onAuthenticated(response.data.user, response.data.token);
+    } catch (err) { setError(err.response?.data?.message || "Unable to connect to the authentication server."); }
+    finally { setBusy(false); }
+  };
+  return <div className="auth-page">
+    <div className="auth-glow"></div>
+    <div className="auth-brand"><div className="brand-mark"><TrendingUp size={21} /></div><div><strong>MarketPulse</strong><span>Stock intelligence</span></div></div>
+    <div className="auth-layout">
+      <section className="auth-intro"><p className="eyebrow">YOUR PERSONAL MARKET DESK</p><h1>Make every market move <em>more intentional.</em></h1><p>Sign in to access your private stock screener, discover opportunities, and build a better investing workflow.</p><div className="date-card"><span>Today</span><strong>{now.toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric", year: "numeric" })}</strong><small>{now.toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" })}</small></div></section>
+      <section className="auth-card"><div className="auth-tabs"><button className={mode === "login" ? "selected" : ""} onClick={() => { setMode("login"); setError(""); }}>Log in</button><button className={mode === "register" ? "selected" : ""} onClick={() => { setMode("register"); setError(""); }}>Create account</button></div><div className="auth-title"><p className="eyebrow">{mode === "login" ? "WELCOME BACK" : "START YOUR JOURNEY"}</p><h2>{mode === "login" ? "Sign in to your dashboard" : "Create your account"}</h2><p>{mode === "login" ? "Use your email and password to continue." : "Your market workspace is only a minute away."}</p></div>
+        <form onSubmit={submit}>{mode === "register" && <label>Full name<input required minLength="2" placeholder="Alex Morgan" value={form.name} onChange={(e) => update("name", e.target.value)} /></label>}<label>Email address<input required type="email" placeholder="you@example.com" value={form.email} onChange={(e) => update("email", e.target.value)} /></label><label>Password<input required minLength="8" type="password" placeholder="At least 8 characters" value={form.password} onChange={(e) => update("password", e.target.value)} /></label>{error && <div className="auth-error">{error}</div>}<button className="auth-submit" disabled={busy}>{busy ? "Please wait…" : mode === "login" ? "Enter dashboard" : "Create account"}<ArrowUpRight size={16} /></button></form><p className="auth-note">By continuing, you agree to use this development application responsibly. Never share your password.</p></section>
+    </div>
+  </div>;
+}
+
+function Dashboard({ user, token, onLogout, onOpenAdmin }) {
+  const [stocks, setStocks] = useState([]); const [summary, setSummary] = useState(null); const [sectors, setSectors] = useState([]); const [filters, setFilters] = useState(initialFilters); const [sortBy, setSortBy] = useState("marketCap"); const [order, setOrder] = useState("desc"); const [loading, setLoading] = useState(true); const [error, setError] = useState(""); const [selectedStock, setSelectedStock] = useState(null); const [priceMoves, setPriceMoves] = useState({}); const { ticks, status: liveStatus } = useLiveMarket(token);
+  useEffect(() => { const handleBack = () => setSelectedStock(null); window.addEventListener("popstate", handleBack); return () => window.removeEventListener("popstate", handleBack); }, []);
+  const queryString = useMemo(() => { const params = new URLSearchParams({ sortBy, order }); Object.entries(filters).forEach(([key, value]) => { if (value) params.set(key, value); }); return params.toString(); }, [filters, sortBy, order]);
+  const authConfig = { headers: { Authorization: `Bearer ${token}` } };
+  const loadData = async () => { setLoading(true); setError(""); try { const [stockResponse, summaryResponse, sectorResponse] = await Promise.all([api.get(`/stocks?${queryString}`, authConfig), api.get("/stocks/summary", authConfig), api.get("/stocks/sectors", authConfig)]); setStocks(stockResponse.data.data); setSummary(summaryResponse.data); setSectors(sectorResponse.data); } catch (err) { if (err.response?.status === 401) onLogout(); else setError("Could not reach the protected API. Make sure the backend is running."); } finally { setLoading(false); } };
+  useEffect(() => { loadData(); }, [queryString, token]);
+  useEffect(() => { Object.values(ticks).forEach((tick) => { setStocks((current) => current.map((stock) => { if (stock.instrumentKey !== tick.instrumentKey || stock.price === tick.price) return stock; const direction = tick.price > stock.price ? "up" : "down"; setPriceMoves((moves) => ({ ...moves, [tick.instrumentKey]: direction })); window.setTimeout(() => setPriceMoves((moves) => { const next = { ...moves }; delete next[tick.instrumentKey]; return next; }), 900); const previousClose = tick.previousClose || stock.previousClose; return { ...stock, price: tick.price, previousClose, changePercent: previousClose ? ((tick.price - previousClose) / previousClose) * 100 : stock.changePercent, lastTradeTime: tick.lastTradeTime, updatedAt: new Date(tick.receivedAt).toISOString() }; })); }); }, [ticks]);
+  const updateFilter = (key, value) => setFilters((current) => ({ ...current, [key]: value })); const resetFilters = () => setFilters(initialFilters); const gainers = stocks.filter((stock) => stock.changePercent > 0).length;
+
+  const openStock = (stock) => { window.history.pushState({ view: "stock", instrumentKey: stock.instrumentKey }, "", `#stock/${encodeURIComponent(stock.instrumentKey)}`); setSelectedStock(stock); };
+  const closeStock = () => { if (window.location.hash.startsWith("#stock/")) window.history.back(); else setSelectedStock(null); };
+  if (selectedStock) return <StockDetail stock={selectedStock} token={token} onBack={closeStock} />;
+  return <div className="app-shell"><aside className="sidebar"><div className="brand"><div className="brand-mark"><TrendingUp size={21} /></div><div><strong>MarketPulse</strong><span>Stock intelligence</span></div></div><nav><a className="active"><BarChart3 size={18} />Overview</a><a className="sidebar-action" onClick={() => document.querySelector(".workspace-card")?.scrollIntoView({ behavior: "smooth" })}><Activity size={18} />Market scanner</a><a className="sidebar-action" onClick={() => window.alert("Saved Screens UI is coming next. You can already save screens through the /api/screens endpoint.")}><SlidersHorizontal size={18} />Saved screens</a>{user.role === "admin" && <button className="admin-nav-button" onClick={onOpenAdmin}><ShieldIcon />Admin console</button>}</nav><div className="sidebar-bottom"><div className="live-dot"><span className={liveStatus.connected ? "live-connected" : ""}></span>{liveStatus.connected ? "Live market feed" : "Market feed connecting"}</div><p>Click any stock row to open its detailed market page.</p></div></aside><main className="main-content"><header className="topbar"><div><p className="eyebrow">MARKET OVERVIEW <span>•</span> {new Date().toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric", year: "numeric" }).toUpperCase()}</p><h1>Good to see you, <em>{user.name.split(" ")[0]}.</em></h1><p className="subtitle">Screen a focused universe of equities using simple fundamental and momentum filters.</p></div><div className="user-actions"><div className="user-chip"><div>{user.name.slice(0, 1).toUpperCase()}</div><span>{user.email}</span></div><button className="logout-button" onClick={onLogout}><LogOut size={15} />Log out</button></div></header>{error && <div className="error-banner">{error}</div>}<section className="stats-grid"><StatCard icon={BarChart3} label="Tracked stocks" value={summary?.total ?? "—"} helper="In your sample universe" accent="blue" /><StatCard icon={ArrowUpRight} label="Market gainers" value={summary?.gainers ?? "—"} helper={`${gainers} match current view`} accent="green" /><StatCard icon={Activity} label="Average daily move" value={summary ? `${summary.averageChange >= 0 ? "+" : ""}${summary.averageChange.toFixed(2)}%` : "—"} helper="Across tracked stocks" accent="purple" /><StatCard icon={TrendingUp} label="Largest company" value={summary?.largestCompany?.symbol ?? "—"} helper={summary?.largestCompany ? formatCap(summary.largestCompany.marketCap) : "—"} accent="orange" /></section><section className="workspace-card"><div className="section-heading"><div><p className="eyebrow">EQUITY SCREENER</p><h2>Filter stocks</h2></div><button className="reset-button" onClick={resetFilters}>Reset filters</button></div><div className="filter-grid"><label className="search-field full"><Search size={17} /><input placeholder="Search by symbol or company" value={filters.search} onChange={(e) => updateFilter("search", e.target.value)} /></label><label><span>Sector</span><div className="select-wrap"><select value={filters.sector} onChange={(e) => updateFilter("sector", e.target.value)}><option value="">All sectors</option>{sectors.map((sector) => <option key={sector}>{sector}</option>)}</select><ChevronDown size={15} /></div></label><label><span>Price range</span><div className="double-input"><input type="number" placeholder="Min $" value={filters.minPrice} onChange={(e) => updateFilter("minPrice", e.target.value)} /><input type="number" placeholder="Max $" value={filters.maxPrice} onChange={(e) => updateFilter("maxPrice", e.target.value)} /></div></label><label><span>Minimum market cap</span><input type="number" placeholder="e.g. 1000000000000" value={filters.minMarketCap} onChange={(e) => updateFilter("minMarketCap", e.target.value)} /></label><label><span>Maximum P/E ratio</span><input type="number" placeholder="e.g. 35" value={filters.maxPeRatio} onChange={(e) => updateFilter("maxPeRatio", e.target.value)} /></label><label><span>Minimum daily change</span><input type="number" step="0.1" placeholder="e.g. 1" value={filters.minChange} onChange={(e) => updateFilter("minChange", e.target.value)} /></label></div></section><section className="results-card"><div className="section-heading results-heading"><div><p className="eyebrow">SCREEN RESULTS</p><h2>{stocks.length} stocks found</h2></div><div className="sort-controls"><Filter size={16} /><span>Sort by</span><select value={sortBy} onChange={(e) => setSortBy(e.target.value)}><option value="marketCap">Market cap</option><option value="changePercent">Daily change</option><option value="price">Price</option><option value="peRatio">P/E ratio</option><option value="volume">Volume</option></select><button onClick={() => setOrder(order === "desc" ? "asc" : "desc")}>{order === "desc" ? "↓" : "↑"}</button></div></div><div className="table-wrap"><table><thead><tr><th>Company</th><th>Price</th><th>Day change</th><th>Market cap</th><th>P/E ratio</th><th>Volume</th></tr></thead><tbody>{loading ? <tr><td colSpan="6" className="empty-state">Loading market data…</td></tr> : stocks.length === 0 ? <tr><td colSpan="6" className="empty-state">No stocks match these filters. Try resetting them.</td></tr> : stocks.map((stock) => <tr className={`stock-row ${priceMoves[stock.instrumentKey] ? `price-${priceMoves[stock.instrumentKey]}` : ""}`} key={`${stock.exchange}-${stock.symbol}`} onClick={() => openStock(stock)}><td><div className="company-cell"><div className="ticker">{stock.symbol.slice(0, 2)}</div><div><strong>{stock.symbol}</strong><span>{stock.company}</span></div></div></td><td className="price live-price">{formatMoney(stock.price)} {priceMoves[stock.instrumentKey] === "up" ? "↑" : priceMoves[stock.instrumentKey] === "down" ? "↓" : ""}</td><td><span className={`change-pill ${stock.changePercent >= 0 ? "positive" : "negative"}`}>{stock.changePercent >= 0 ? <ArrowUpRight size={14} /> : <ArrowDownRight size={14} />}{Math.abs(stock.changePercent).toFixed(2)}%</span></td><td>{formatCap(stock.marketCap)}</td><td>{stock.peRatio.toFixed(1)}x</td><td>{formatVolume(stock.volume)}</td></tr>)}</tbody></table></div></section><footer>MarketPulse private dashboard · Data shown is illustrative sample data, not financial advice.</footer></main></div>;
+}
+
+function App() {
+  const [token, setToken] = useState(() => localStorage.getItem("marketpulse_token")); const [user, setUser] = useState(null); const [checking, setChecking] = useState(Boolean(token)); const [adminOpen, setAdminOpen] = useState(false);
+  useEffect(() => { if (!token) { setChecking(false); return; } api.get("/auth/me", { headers: { Authorization: `Bearer ${token}` } }).then((response) => { setUser(response.data.user); setAdminOpen(response.data.user.role === "admin"); }).catch(() => { localStorage.removeItem("marketpulse_token"); setToken(null); setAdminOpen(false); }).finally(() => setChecking(false)); }, [token]);
+  const authenticated = (nextUser, nextToken) => { setUser(nextUser); setToken(nextToken); setAdminOpen(nextUser.role === "admin"); }; const logout = () => { localStorage.removeItem("marketpulse_token"); setUser(null); setToken(null); setAdminOpen(false); };
+  if (checking) return <div className="auth-loading">Loading your secure workspace…</div>;
+  return token && user ? (adminOpen && user.role === "admin" ? <AdminPanel user={user} token={token} onBack={() => setAdminOpen(false)} onLogout={logout} /> : <Dashboard user={user} token={token} onLogout={logout} onOpenAdmin={() => setAdminOpen(true)} />) : <AuthScreen onAuthenticated={authenticated} />;
+}
+
+export default App;
