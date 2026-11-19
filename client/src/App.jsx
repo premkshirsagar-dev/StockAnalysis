@@ -56,8 +56,8 @@ function Dashboard({ user, token, onLogout, onOpenAdmin }) {
 
 function App() {
   const [token, setToken] = useState(() => localStorage.getItem("marketpulse_token")); const [user, setUser] = useState(null); const [checking, setChecking] = useState(Boolean(token)); const [adminOpen, setAdminOpen] = useState(false);
-  useEffect(() => { if (!token) { setChecking(false); return; } api.get("/auth/me", { headers: { Authorization: `Bearer ${token}` } }).then((response) => setUser(response.data.user)).catch(() => { localStorage.removeItem("marketpulse_token"); setToken(null); }).finally(() => setChecking(false)); }, [token]);
-  const authenticated = (nextUser, nextToken) => { setUser(nextUser); setToken(nextToken); }; const logout = () => { localStorage.removeItem("marketpulse_token"); setUser(null); setToken(null); };
+  useEffect(() => { if (!token) { setChecking(false); return; } api.get("/auth/me", { headers: { Authorization: `Bearer ${token}` } }).then((response) => { setUser(response.data.user); setAdminOpen(response.data.user.role === "admin"); }).catch(() => { localStorage.removeItem("marketpulse_token"); setToken(null); setAdminOpen(false); }).finally(() => setChecking(false)); }, [token]);
+  const authenticated = (nextUser, nextToken) => { setUser(nextUser); setToken(nextToken); setAdminOpen(nextUser.role === "admin"); }; const logout = () => { localStorage.removeItem("marketpulse_token"); setUser(null); setToken(null); setAdminOpen(false); };
   if (checking) return <div className="auth-loading">Loading your secure workspace…</div>;
   return token && user ? (adminOpen && user.role === "admin" ? <AdminPanel user={user} token={token} onBack={() => setAdminOpen(false)} onLogout={logout} /> : <Dashboard user={user} token={token} onLogout={logout} onOpenAdmin={() => setAdminOpen(true)} />) : <AuthScreen onAuthenticated={authenticated} />;
 }
